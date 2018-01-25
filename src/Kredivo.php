@@ -40,8 +40,12 @@ class Kredivo
 	{
 		// echo $this->getApiUrl();
 		$payloads['server_key'] = $this->getServerKey();
-		$payloads['push_uri'] = config('kredivo.push_uri');
-		$payloads['back_to_store_uri'] = config('kredivo.cancel_uri');
+		if(!in_array('push_uri', $payloads))
+			$payloads['push_uri'] = config('kredivo.push_uri');
+		if(!in_array('user_cancel_uri', $payloads))
+			$payloads['user_cancel_uri'] = config('kredivo.cancel_uri');
+		if(!in_array('back_to_store_uri', $payloads))
+			$payloads['back_to_store_uri'] = config('kredivo.settlement_uri');
 		$client=new Client([
 			'base_uri'=>$this->getApiUrl(),
 			'headers'=> [
