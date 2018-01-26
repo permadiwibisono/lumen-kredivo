@@ -38,7 +38,6 @@ class Kredivo
 
 	public function checkout(array $payloads)
 	{
-		// echo $this->getApiUrl();
 		$payloads['server_key'] = $this->getServerKey();
 		if(!in_array('push_uri', $payloads))
 			$payloads['push_uri'] = config('kredivo.push_uri');
@@ -69,11 +68,10 @@ class Kredivo
 			]
 		]);
 		$payloads = [
-			'server_key'=>$this->getServerKey(),
 			'transaction_id'=>$transaction_id,
 			'signature_key'=>$signature_key
 		];
-		$response=$client->get($this->getRelativeUrl('check'),[
+		$response=$client->get($this->getRelativeUrl('update'),[
 			'query'=>$payloads
 		]);
 		return collect(json_decode($response->getBody()));
