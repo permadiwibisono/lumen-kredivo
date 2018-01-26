@@ -6,6 +6,11 @@
         "php": ">=5.3.0",
         "guzzlehttp/guzzle": "^6.3"
     },
+    "autoload": {
+        "psr-4": {
+          "Pewe\\Kredivo\\": "src"
+        }
+    },
     "keywords": [
         "lumen",
         "laravel",
