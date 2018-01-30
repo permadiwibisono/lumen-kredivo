@@ -90,7 +90,7 @@ class Kredivo
 			'server_key'=>$this->getServerKey(),
 			'order_id'=>$order_id,
 			'transaction_id'=>$transaction_id,
-			'cancellation_reason'=>$reason,
+			'cancellation_reason'=>$cancellation_reason,
 			'cancelled_by'=>$cancelled_by,
 			'cancellation_date'=>$cancellation_date
 		];
