@@ -58,6 +58,26 @@ class Kredivo
 		return collect(json_decode($response->getBody()));
 	}
 
+	public function paymentType(array $items, float $amount)
+	{
+		$client=new Client([
+			'base_uri'=>$this->getApiUrl(),
+			'headers'=> [
+				'Content-Type' =>	'application/json',
+				'Accept' =>	'application/json'
+			]
+		]);
+		$payloads = [
+			'server_key'=> $this->getServerKey(),
+			'amount' => $amount,
+			'items'=> $items
+		];
+		$response=$client->post($this->getRelativeUrl('payments'),[
+			'json'=>$payloads
+		]);
+		return collect(json_decode($response->getBody()));
+	}
+
 	public function check(string $transaction_id, string $signature_key)
 	{
 		$client=new Client([
