@@ -3,6 +3,7 @@ namespace Pewe\Kredivo;
 use GuzzleHttp\Exception\RequestException;
 use \GuzzleHttp\Client as Client;
 use Pewe\Kredivo\Exceptions\InvalidConfigKredivoException as InvalidConfigException;
+use Pewe\Kredivo\Exceptions\KredivoException;
 /**
 * 
 */
@@ -66,11 +67,26 @@ class Kredivo
 		]);
 	}
 
+	private function getResponse($response)
+	{
+		$response_array = (array)$response;
+		if($response_array['status'] === 'OK')
+			return $response_array;
+		$message = array_key_exists('error', $response_array)?
+			$response_array['error']->message : 'Unhandled error!';
+		$error = array_key_exists('error', $response_array)?
+			$response_array['error'] : null;
+		throw new KredivoException(
+			$message,
+			$response_array['status'],
+			$error
+		);
+	}
+
 	public function getRelativeUrl($route)
 	{
 		return 'kredivo/'.self::$VERSION.'/'.$route;
 	}
-
 
 	public function checkout(array $payloads)
 	{
@@ -85,52 +101,63 @@ class Kredivo
 			$response = $this->request()->post($this->getRelativeUrl('checkout_url'),[
 				'json'=>$payloads
 			]);
-			return json_decode($response->getBody());
+			return $this->getResponse(json_decode($response->getBody()));
 		} catch (\Exception $e) {
-			dd("Masuk");
 			throw $e;
 		}
 	}
 
 	public function paymentType(array $items, float $amount)
 	{
-		$payloads = [
-			'server_key'=> $this->getServerKey(),
-			'amount' => $amount,
-			'items'=> $items
-		];
-		$response = $this->request()->post($this->getRelativeUrl('payments'),[
-			'json'=>$payloads
-		]);
-		return json_decode($response->getBody());
+		try {
+			$payloads = [
+				'server_key'=> $this->getServerKey(),
+				'amount' => $amount,
+				'items'=> $items
+			];
+			$response = $this->request()->post($this->getRelativeUrl('payments'),[
+				'json'=>$payloads
+			]);
+			return $this->getResponse(json_decode($response->getBody()));
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 
 	public function check(string $transaction_id, string $signature_key)
 	{
-		$payloads = [
-			'transaction_id'=>$transaction_id,
-			'signature_key'=>$signature_key
-		];
-		$response = $this->request()->get($this->getRelativeUrl('update'),[
-			'query'=>$payloads
-		]);
-		return json_decode($response->getBody());
+		try {
+			$payloads = [
+				'transaction_id'=>$transaction_id,
+				'signature_key'=>$signature_key
+			];
+			$response = $this->request()->get($this->getRelativeUrl('update'),[
+				'query'=>$payloads
+			]);
+			return $this->getResponse(json_decode($response->getBody()));
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 
 	public function cancel(string $order_id,string $transaction_id,string $cancellation_reason, string $cancelled_by, string $cancellation_date)
 	{
-		$payloads = [
-			'server_key'=>$this->getServerKey(),
-			'order_id'=>$order_id,
-			'transaction_id'=>$transaction_id,
-			'cancellation_reason'=>$cancellation_reason,
-			'cancelled_by'=>$cancelled_by,
-			'cancellation_date'=>$cancellation_date
-		];
-		$response = $this->request()->post($this->getRelativeUrl('cancel_transaction'),[
-			'form_params'=>$payloads
-		]);
-		return json_decode($response->getBody());
+		try {
+			$payloads = [
+				'server_key'=>$this->getServerKey(),
+				'order_id'=>$order_id,
+				'transaction_id'=>$transaction_id,
+				'cancellation_reason'=>$cancellation_reason,
+				'cancelled_by'=>$cancelled_by,
+				'cancellation_date'=>$cancellation_date
+			];
+			$response = $this->request()->post($this->getRelativeUrl('cancel_transaction'),[
+				'form_params'=>$payloads
+			]);
+			return $this->getResponse(json_decode($response->getBody()));
+		} catch (\Exception $e) {
+			throw $e;
+		}
 	}
 
 }
