@@ -12,6 +12,6 @@ class Kredivo extends Facade
      * @return string
      */
     protected static function getFacadeAccessor() { 
-    	return 'Pewe\Kredivo\Kredivo'; 
+    	return 'Pewe\Kredivo\Laravel\Kredivo'; 
     }
 }

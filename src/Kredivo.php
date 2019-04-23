@@ -2,7 +2,7 @@
 namespace Pewe\Kredivo;
 use GuzzleHttp\Exception\RequestException;
 use \GuzzleHttp\Client as Client;
-
+use Pewe\Kredivo\Exceptions\InvalidConfigKredivoException as InvalidConfigException;
 /**
 * 
 */
@@ -11,101 +11,114 @@ class Kredivo
 	private static $SANDBOX_URL ='https://sandbox.kredivo.com';
 	private static $API_URL ='https://api.kredivo.com';
 	private static $VERSION;
-	function __construct()
+
+	private $is_production;
+	private $server_key;
+	private $push_uri;
+	private $user_cancel_uri;
+	private $back_to_store_uri;
+	
+	function __construct(array $configs)
 	{
-		Kredivo::$VERSION = config('kredivo.version','v2');
+		$this->_validateConfig($configs);
+		self::$VERSION =  array_key_exists('version', $configs)? $configs['version']: 'v2';
+		$this->is_production = array_key_exists('is_production', $configs)? $configs['is_production']: true;
+		$this->server_key = $configs['server_key'];
+		$this->push_uri = $configs['push_uri'];
+		$this->user_cancel_uri = $configs['user_cancel_uri'];
+		$this->back_to_store_uri = $configs['back_to_store_uri'];
+	}
+
+	private function _validateConfig(array $configs)
+	{
+		if(!array_key_exists('server_key', $configs) || is_null($configs['server_key']))
+			throw new InvalidConfigException();
+		if(!array_key_exists('push_uri', $configs) || is_null($configs['push_uri']))
+			throw new InvalidConfigException();
+		if(!array_key_exists('user_cancel_uri', $configs) || is_null($configs['user_cancel_uri']))
+			throw new InvalidConfigException();
+		if(!array_key_exists('back_to_store_uri', $configs) || is_null($configs['back_to_store_uri']))
+			throw new InvalidConfigException();
 	}
 
 	private function getServerKey()
 	{
-		return config('kredivo.production',false)? config('kredivo.server_key'):config('kredivo.development_key');
+		return $this->server_key;
 	}
 
 	private function getApiUrl()
 	{
-		return (config('kredivo.production',false)? Kredivo::$API_URL : Kredivo::$SANDBOX_URL);
+		return ($this->is_production ? self::$API_URL : self::$SANDBOX_URL);
 	}
 
 	private function getVersion()
 	{
-		return Kredivo::$VERSION;
+		return self::$VERSION;
+	}
+
+	private function request(){
+		return new Client([
+			'base_uri'=>$this->getApiUrl(),
+			'headers'=> [
+				'Content-Type' =>	'application/json',
+				'Accept' =>	'application/json'
+			]
+		]);
 	}
 
 	public function getRelativeUrl($route)
 	{
-		return 'kredivo/'.Kredivo::$VERSION.'/'.$route;
+		return 'kredivo/'.self::$VERSION.'/'.$route;
 	}
+
 
 	public function checkout(array $payloads)
 	{
-		$payloads['server_key'] = $this->getServerKey();
-		if(!array_key_exists('push_uri', $payloads))
-			$payloads['push_uri'] = config('kredivo.push_uri');
-		if(!array_key_exists('user_cancel_uri', $payloads))
-			$payloads['user_cancel_uri'] = config('kredivo.cancel_uri');
-		if(!array_key_exists('back_to_store_uri', $payloads))
-			$payloads['back_to_store_uri'] = config('kredivo.settlement_uri');
-		$client=new Client([
-			'base_uri'=>$this->getApiUrl(),
-			'headers'=> [
-				'Content-Type' =>	'application/json',
-				'Accept' =>	'application/json'
-			]
-		]);
-		$response=$client->post($this->getRelativeUrl('checkout_url'),[
-			'json'=>$payloads
-		]);
-		return collect(json_decode($response->getBody()));
+		try {
+			$payloads['server_key'] = $this->getServerKey();
+			if(!array_key_exists('push_uri', $payloads))
+				$payloads['push_uri'] = $this->push_uri;
+			if(!array_key_exists('user_cancel_uri', $payloads))
+				$payloads['user_cancel_uri'] = $this->user_cancel_uri;
+			if(!array_key_exists('back_to_store_uri', $payloads))
+				$payloads['back_to_store_uri'] = $this->back_to_store_uri;
+			$response = $this->request()->post($this->getRelativeUrl('checkout_url'),[
+				'json'=>$payloads
+			]);
+			return json_decode($response->getBody());
+		} catch (\Exception $e) {
+			dd("Masuk");
+			throw $e;
+		}
 	}
 
 	public function paymentType(array $items, float $amount)
 	{
-		$client=new Client([
-			'base_uri'=>$this->getApiUrl(),
-			'headers'=> [
-				'Content-Type' =>	'application/json',
-				'Accept' =>	'application/json'
-			]
-		]);
 		$payloads = [
 			'server_key'=> $this->getServerKey(),
 			'amount' => $amount,
 			'items'=> $items
 		];
-		$response=$client->post($this->getRelativeUrl('payments'),[
+		$response = $this->request()->post($this->getRelativeUrl('payments'),[
 			'json'=>$payloads
 		]);
-		return collect(json_decode($response->getBody()));
+		return json_decode($response->getBody());
 	}
 
 	public function check(string $transaction_id, string $signature_key)
 	{
-		$client=new Client([
-			'base_uri'=>$this->getApiUrl(),
-			'headers'=> [
-				'Content-Type' =>	'application/json',
-				'Accept' =>	'application/json'
-			]
-		]);
 		$payloads = [
 			'transaction_id'=>$transaction_id,
 			'signature_key'=>$signature_key
 		];
-		$response=$client->get($this->getRelativeUrl('update'),[
+		$response = $this->request()->get($this->getRelativeUrl('update'),[
 			'query'=>$payloads
 		]);
-		return collect(json_decode($response->getBody()));
+		return json_decode($response->getBody());
 	}
 
 	public function cancel(string $order_id,string $transaction_id,string $cancellation_reason, string $cancelled_by, string $cancellation_date)
 	{
-		$client=new Client([
-			'base_uri'=>$this->getApiUrl(),
-			'headers'=> [
-				'Content-Type' =>	'application/json',
-				'Accept' =>	'application/json'
-			]
-		]);
 		$payloads = [
 			'server_key'=>$this->getServerKey(),
 			'order_id'=>$order_id,
@@ -114,10 +127,10 @@ class Kredivo
 			'cancelled_by'=>$cancelled_by,
 			'cancellation_date'=>$cancellation_date
 		];
-		$response=$client->post($this->getRelativeUrl('cancel_transaction'),[
+		$response = $this->request()->post($this->getRelativeUrl('cancel_transaction'),[
 			'form_params'=>$payloads
 		]);
-		return collect(json_decode($response->getBody()));
+		return json_decode($response->getBody());
 	}
 
 }
