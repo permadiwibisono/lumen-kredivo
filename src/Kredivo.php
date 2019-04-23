@@ -1,6 +1,5 @@
 <?php 
 namespace Pewe\Kredivo;
-use GuzzleHttp\Exception\RequestException;
 use \GuzzleHttp\Client as Client;
 use Pewe\Kredivo\Exceptions\InvalidServerKeyKredivoException as InvalidServerKeyException;
 use Pewe\Kredivo\Exceptions\InvalidConfigKredivoException as InvalidConfigException;

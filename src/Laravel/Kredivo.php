@@ -1,6 +1,5 @@
 <?php 
 namespace Pewe\Kredivo\Laravel;
-use GuzzleHttp\Exception\RequestException;
 use \GuzzleHttp\Client as Client;
 use Pewe\Kredivo\Kredivo as KredivoClient;
 
