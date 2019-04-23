@@ -2,6 +2,7 @@
 namespace Pewe\Kredivo;
 use GuzzleHttp\Exception\RequestException;
 use \GuzzleHttp\Client as Client;
+use Pewe\Kredivo\Exceptions\InvalidServerKeyKredivoException as InvalidServerKeyException;
 use Pewe\Kredivo\Exceptions\InvalidConfigKredivoException as InvalidConfigException;
 use Pewe\Kredivo\Exceptions\KredivoException;
 /**
@@ -76,6 +77,8 @@ class Kredivo
 			$response_array['error']->message : 'Unhandled error!';
 		$error = array_key_exists('error', $response_array)?
 			$response_array['error'] : null;
+		if(in_array($message, ['Invalid merchant.', 'Field secret_key is INCORRECT.']))
+			throw new InvalidServerKeyException($error);
 		throw new KredivoException(
 			$message,
 			$response_array['status'],
